@@ -1,0 +1,15 @@
+{
+  "domain": "actronair_nimbus",
+  "name": "Actron Air Nimbus",
+  "codeowners": ["@cmbrad"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://www.home-assistant.io/integrations/actronair_nimbus",
+  "homekit": {},
+  "iot_class": "cloud_polling",
+  "quality_scale": "bronze",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": [],
+  "version": "0.1.0"
+}

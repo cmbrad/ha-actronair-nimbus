@@ -1,0 +1,90 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Device is already configured"
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "host": "Host",
+          "password": "Password",
+          "username": "Username"
+        }
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "air_conditioner": {
+        "name": "Air conditioner"
+      },
+      "zone": {
+        "name": "Zone"
+      }
+    },
+    "sensor": {
+      "compressor_mode": {
+        "name": "Compressor mode"
+      },
+      "compressor_speed": {
+        "name": "Compressor speed"
+      },
+      "compressor_power": {
+        "name": "Compressor power"
+      },
+      "indoor_fan_pwm": {
+        "name": "Indoor fan PWM"
+      },
+      "indoor_fan_rpm": {
+        "name": "Indoor fan RPM"
+      },
+      "compressor_coil_temperature": {
+        "name": "Compressor coil temperature"
+      },
+      "compressor_coil_inlet_temperature": {
+        "name": "Compressor coil inlet temperature"
+      },
+      "vft_airflow": {
+        "name": "VFT airflow"
+      },
+      "vft_static_pressure": {
+        "name": "VFT static pressure"
+      },
+      "uptime": {
+        "name": "Uptime"
+      },
+      "wifi_signal_strength": {
+        "name": "Wi-Fi signal strength"
+      }
+    },
+    "binary_sensor": {
+      "quite_mode_active": {
+        "name": "Quiet mode active"
+      }
+    },
+    "switch": {
+      "away_mode_enabled": {
+        "name": "Away mode enabled"
+      },
+      "turbo_mode_enabled": {
+        "name": "Turbo mode enabled"
+      },
+      "continuous_fan_enabled": {
+        "name": "Continuous fan enabled"
+      },
+      "quiet_mode_enabled": {
+        "name": "Quiet mode enabled"
+      }
+    },
+    "update": {
+      "wall_controller_firmware_update": {
+        "name": "ActronAir Nimbus Wall Controller Firmware Update"
+      }
+    }
+  }
+}
