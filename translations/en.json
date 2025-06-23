@@ -55,16 +55,25 @@
       "vft_static_pressure": {
         "name": "VFT static pressure"
       },
-      "uptime": {
-        "name": "Uptime"
-      },
       "wifi_signal_strength": {
         "name": "Wi-Fi signal strength"
+      },
+      "zone_sensor_battery": {
+        "name": "Zone sensor battery"
+      },
+      "zone_damper_position": {
+        "name": "Zone damper position"
       }
     },
     "binary_sensor": {
       "quite_mode_active": {
         "name": "Quiet mode active"
+      },
+      "zone_sensor_connected": {
+        "name": "Zone sensor connected"
+      },
+      "clean_filter_alert": {
+        "name": "Clean filter alert"
       }
     },
     "switch": {
@@ -83,7 +92,13 @@
     },
     "update": {
       "wall_controller_firmware_update": {
-        "name": "ActronAir Nimbus Wall Controller Firmware Update"
+        "name": "Wall controller firmware update"
+      },
+      "indoor_unit_firmware_update": {
+        "name": "Indoor unit firmware update"
+      },
+      "outdoor_unit_firmware_update": {
+        "name": "Outdoor unit firmware update"
       }
     }
   }

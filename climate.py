@@ -129,8 +129,6 @@ class ActronAirNimbusAirConditioner(ActronAirNimbusClimateEntity):
         self.ac_serial = unique_id
         self._attr_unique_id = unique_id
 
-        self._update_internal_state(initial_state)
-
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, unique_id)},
             name=initial_state._state["NV_SystemSettings"]["SystemName"],
@@ -139,6 +137,8 @@ class ActronAirNimbusAirConditioner(ActronAirNimbusClimateEntity):
             serial_number=initial_state._state["AirconSystem"]["MasterSerial"],
             sw_version=initial_state._state["AirconSystem"]["MasterWCFirmwareVersion"],
         )
+
+        self._update_internal_state(initial_state)
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -341,14 +341,24 @@ class ActronAirNimbusZone(ActronAirNimbusClimateEntity):
         self.ac_serial = ac_serial
         self.zone_id = zone_id
 
-        self._update_internal_state(initial_state)
+        peripherals = [
+            peripheral
+            for peripheral in initial_state._state["AirconSystem"]["Peripherals"]
+            if peripheral["DeviceType"] == "Zone Sensor"
+        ]
+        peripherals.sort(key=lambda x: x["ZoneAssignment"][0])
 
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self.unique_id)},
             via_device=(DOMAIN, ac_serial),
-            name=f"Zone {zone_id + 1} - {initial_state.zones[zone_id]['NV_Title']}",
+            name=f"{initial_state.zones[zone_id]['NV_Title']} zone",
             manufacturer="Actron Air",
+            model=peripherals[zone_id]["DeviceType"],
+            serial_number=peripherals[zone_id]["SerialNumber"],
+            sw_version=peripherals[zone_id]["Firmware"]["InstalledVersion"]["NRF52"],
         )
+
+        self._update_internal_state(initial_state)
 
     @callback
     def _handle_coordinator_update(self) -> None:

@@ -1,3 +1,5 @@
+import logging
+
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.const import (
     REVOLUTIONS_PER_MINUTE,
@@ -18,6 +20,8 @@ from homeassistant.components.sensor.const import SensorStateClass, SensorDevice
 from . import ActronAirNimbusConfigEntry
 from .entity import ActronAirNimbusEntity
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -45,9 +49,24 @@ async def async_setup_entry(
                 ),
                 ActronAirNimbusVftAirflowSensor(coordinator, state, ac_serial),
                 ActronAirNimbusVftStaticPressureSensor(coordinator, state, ac_serial),
-                ActronAirNimbusUptimeSensor(coordinator, state, ac_serial),
             ]
         )
+
+        # Add zone sensor entities for each existing zone
+        for zone_id, zone in enumerate(state.zones):
+            if not zone["NV_Exists"]:
+                continue
+
+            entities.extend(
+                [
+                    ActronAirNimbusZoneSensorBatterySensor(
+                        coordinator, state, ac_serial, zone_id
+                    ),
+                    ActronAirNimbusZoneDamperPositionSensor(
+                        coordinator, state, ac_serial, zone_id
+                    ),
+                ]
+            )
 
     async_add_entities(entities)
 
@@ -64,6 +83,36 @@ class ActronAirNimbusSensorEntity(ActronAirNimbusEntity, SensorEntity):
         self._attr_unique_id = f"{ac_serial}_{self._attr_translation_key}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, ac_serial)},
+        }
+
+        self._update_internal_state(initial_state)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        state = self.coordinator.data[self.ac_serial]
+
+        self._update_internal_state(state)
+
+        return super()._handle_coordinator_update()
+
+
+class ActronAirNimbusZoneSensorEntity(ActronAirNimbusEntity, SensorEntity):
+    """Base class for ActronAir Nimbus sensor entities."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self, coordinator, initial_state, ac_serial: str, zone_id: str
+    ) -> None:
+        super().__init__(coordinator, ac_serial)
+        self.ac_serial = ac_serial
+        self.zone_id = zone_id
+
+        self._attr_unique_id = (
+            f"{ac_serial}_zone_{zone_id}_{self._attr_translation_key}"
+        )
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, f"{ac_serial}_zone_{zone_id}")},
         }
 
         self._update_internal_state(initial_state)
@@ -190,19 +239,6 @@ class ActronAirNimbusVftStaticPressureSensor(ActronAirNimbusSensorEntity):
         ]
 
 
-class ActronAirNimbusUptimeSensor(ActronAirNimbusSensorEntity):
-    """Representation of the uptime sensor."""
-
-    _attr_translation_key = "uptime"
-    _attr_device_class = SensorDeviceClass.DURATION
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = UnitOfTime.SECONDS
-
-    def _update_internal_state(self, state):
-        """Update the internal state from the coordinator data."""
-        self._attr_native_value = state._state["SystemStatus_Local"]["Uptime_s"]
-
-
 class ActronAirNimbusWifiSignalStrengthSensor(ActronAirNimbusSensorEntity):
     """Representation of the WiFi signal strength sensor."""
 
@@ -213,4 +249,40 @@ class ActronAirNimbusWifiSignalStrengthSensor(ActronAirNimbusSensorEntity):
 
     def _update_internal_state(self, state):
         """Update the internal state from the coordinator data."""
-        self._attr_native_value = state._state["SystemStatus_Local"]["WifiStrength_of3"]
+        self._attr_native_value = state._state[f"<{self.ac_serial.upper()}>"][
+            "SystemStatus_Local"
+        ]["WifiStrength_of3"]
+
+
+class ActronAirNimbusZoneSensorBatterySensor(ActronAirNimbusZoneSensorEntity):
+    """Representation of the zone sensor battery sensor."""
+
+    _attr_translation_key = "zone_sensor_battery"
+    _attr_device_class = SensorDeviceClass.BATTERY
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    def _update_internal_state(self, state):
+        """Update the internal state from the coordinator data."""
+        peripherals = [
+            peripheral
+            for peripheral in state._state["AirconSystem"]["Peripherals"]
+            if peripheral["DeviceType"] == "Zone Sensor"
+        ]
+        peripherals.sort(key=lambda x: x["ZoneAssignment"][0])
+
+        self._attr_native_value = peripherals[self.zone_id][
+            "RemainingBatteryCapacity_pc"
+        ]
+
+
+class ActronAirNimbusZoneDamperPositionSensor(ActronAirNimbusZoneSensorEntity):
+    """Representation of the zone damper position sensor."""
+
+    _attr_translation_key = "zone_damper_position"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    def _update_internal_state(self, state):
+        """Update the internal state from the coordinator data."""
+        self._attr_native_value = state.zones[self.zone_id]["ZonePosition"]

@@ -1,4 +1,4 @@
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -21,12 +21,33 @@ async def async_setup_entry(
 
     entities: list[ActronAirNimbusEntity] = []
     for unique_id, state in coordinator.data.items():
-        entities.append(QuiteModeActiveBinarySensor(coordinator, state, unique_id))
+        entities.extend(
+            [
+                ActronAirNimbusQuiteModeActiveBinarySensor(
+                    coordinator, state, unique_id
+                ),
+                ActronAirNimbusCleanFilterAlertBinarySensor(
+                    coordinator, state, unique_id
+                ),
+            ]
+        )
+
+        entities.extend(
+            [
+                ActronAirNimbusZoneSensorConnectedBinarySensor(
+                    coordinator, state, unique_id, zone_id
+                )
+                for zone_id, zone in enumerate(state.zones)
+                if zone["NV_Exists"]
+            ]
+        )
 
     async_add_entities(entities)
 
 
-class QuiteModeActiveBinarySensor(ActronAirNimbusEntity, BinarySensorEntity):
+class ActronAirNimbusQuiteModeActiveBinarySensor(
+    ActronAirNimbusEntity, BinarySensorEntity
+):
     """Representation of an Actron Air Nimbus binary sensor."""
 
     _attr_translation_key = "quite_mode_active"
@@ -46,10 +67,102 @@ class QuiteModeActiveBinarySensor(ActronAirNimbusEntity, BinarySensorEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, ac_serial)},
         )
+        self._update_internal_state(initial_state)
 
-    @property
-    def is_on(self) -> bool:
-        """Return True if the binary sensor is on."""
-        return self.coordinator.data[self.ac_serial]._state["UserAirconSettings"][
-            "QuietModeActive"
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        state = self.coordinator.data[self.ac_serial]
+
+        self._update_internal_state(state)
+
+        return super()._handle_coordinator_update()
+
+    def _update_internal_state(self, state):
+        self._attr_is_on = state._state["UserAirconSettings"]["QuietModeActive"]
+
+
+class ActronAirNimbusCleanFilterAlertBinarySensor(
+    ActronAirNimbusEntity, BinarySensorEntity
+):
+    """Representation of an Actron Air Nimbus binary sensor."""
+
+    _attr_translation_key = "clean_filter_alert"
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+
+    def __init__(
+        self,
+        coordinator,
+        initial_state,
+        ac_serial: str,
+    ) -> None:
+        super().__init__(coordinator, ac_serial)
+
+        self.ac_serial = ac_serial
+
+        self._attr_unique_id = f"{ac_serial}_{self._attr_translation_key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, ac_serial)},
+        )
+
+        self._update_internal_state(initial_state)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        state = self.coordinator.data[self.ac_serial]
+
+        self._update_internal_state(state)
+
+        return super()._handle_coordinator_update()
+
+    def _update_internal_state(self, state):
+        """Update the internal state from the coordinator data."""
+        self._attr_is_on = state._state["Alerts"]["CleanFilter"]
+
+
+class ActronAirNimbusZoneSensorConnectedBinarySensor(
+    ActronAirNimbusEntity, BinarySensorEntity
+):
+    """Representation of an Actron Air Nimbus binary sensor."""
+
+    _attr_translation_key = "zone_sensor_connected"
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+
+    def __init__(
+        self,
+        coordinator,
+        initial_state,
+        ac_serial: str,
+        zone_id: str,
+    ) -> None:
+        super().__init__(coordinator, ac_serial)
+
+        self.ac_serial = ac_serial
+        self.zone_id = zone_id
+
+        self._attr_unique_id = (
+            f"{ac_serial}_zone_{zone_id}_{self._attr_translation_key}"
+        )
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{ac_serial}_zone_{zone_id}")},
+        )
+
+        self._update_internal_state(initial_state)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        state = self.coordinator.data[self.ac_serial]
+
+        self._update_internal_state(state)
+
+        return super()._handle_coordinator_update()
+
+    def _update_internal_state(self, state):
+        """Update the internal state from the coordinator data."""
+        peripherals = [
+            peripheral
+            for peripheral in state._state["AirconSystem"]["Peripherals"]
+            if peripheral["DeviceType"] == "Zone Sensor"
         ]
+        peripherals.sort(key=lambda x: x["ZoneAssignment"][0])
+
+        self._attr_is_on = peripherals[self.zone_id]["ConnectionState"] == "Connected"
