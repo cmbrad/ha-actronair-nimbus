@@ -74,6 +74,9 @@
       },
       "clean_filter_alert": {
         "name": "Clean filter alert"
+      },
+      "defrosting_alert": {
+        "name": "Defrosting alert"
       }
     },
     "switch": {
