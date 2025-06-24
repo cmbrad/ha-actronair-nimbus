@@ -1,4 +1,4 @@
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -41,23 +41,46 @@ class QuietModeEnabledSwitch(ActronAirNimbusEntity, SwitchEntity):
             identifiers={(DOMAIN, ac_serial)},
         )
 
-    @property
-    def is_on(self) -> bool:
-        return self.coordinator.data[self.ac_serial]._state["UserAirconSettings"][
-            "QuietModeEnabled"
-        ]
+        self._update_internal_state(initial_state)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        state = self.coordinator.data[self.ac_serial]
+
+        self._update_internal_state(state)
+
+        return super()._handle_coordinator_update()
+
+    def _update_internal_state(self, state):
+        self._attr_is_on = state._state["UserAirconSettings"]["QuietModeEnabled"]
 
     async def async_turn_on(self, **kwargs) -> None:
         await self.coordinator.actron_api_client.set_settings(
-            serial=self._system_serial,
+            serial=self.ac_serial,
             settings={"UserAirconSettings.QuietModeEnabled": True},
         )
 
+        # pre-emptively update local values given actron events can be slow
+        self._attr_is_on = True
+        # write the state back now we've pre-emptively updated it for responsiveness
+        self.async_write_ha_state()
+
+        # tell the coordinator to refresh data
+        await self.coordinator.async_request_refresh()
+
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.actron_api_client.set_settings(
-            serial=self._system_serial,
+            serial=self.ac_serial,
             settings={"UserAirconSettings.QuietModeEnabled": False},
         )
+
+        # pre-emptively update local values given actron events can be slow
+        self._attr_is_on = False
+        # write the state back now we've pre-emptively updated it for responsiveness
+        self.async_write_ha_state()
+
+        # tell the coordinator to refresh data
+        await self.coordinator.async_request_refresh()
 
 
 class TurboModeEnabledSwitch(ActronAirNimbusEntity, SwitchEntity):
@@ -75,23 +98,46 @@ class TurboModeEnabledSwitch(ActronAirNimbusEntity, SwitchEntity):
             identifiers={(DOMAIN, ac_serial)},
         )
 
-    @property
-    def is_on(self) -> bool:
-        return self.coordinator.data[self.ac_serial]._state["UserAirconSettings"][
-            "TurboMode"
-        ]["Enabled"]
+        self._update_internal_state(initial_state)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        state = self.coordinator.data[self.ac_serial]
+
+        self._update_internal_state(state)
+
+        return super()._handle_coordinator_update()
+
+    def _update_internal_state(self, state):
+        self._attr_is_on = state._state["UserAirconSettings"]["TurboMode"]["Enabled"]
 
     async def async_turn_on(self, **kwargs) -> None:
         await self.coordinator.actron_api_client.set_settings(
-            serial=self._system_serial,
+            serial=self.ac_serial,
             settings={"UserAirconSettings.TurboMode.Enabled": True},
         )
 
+        # pre-emptively update local values given actron events can be slow
+        self._attr_is_on = True
+        # write the state back now we've pre-emptively updated it for responsiveness
+        self.async_write_ha_state()
+
+        # tell the coordinator to refresh data
+        await self.coordinator.async_request_refresh()
+
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.actron_api_client.set_settings(
-            serial=self._system_serial,
+            serial=self.ac_serial,
             settings={"UserAirconSettings.TurboMode.Enabled": False},
         )
+
+        # pre-emptively update local values given actron events can be slow
+        self._attr_is_on = False
+        # write the state back now we've pre-emptively updated it for responsiveness
+        self.async_write_ha_state()
+
+        # tell the coordinator to refresh data
+        await self.coordinator.async_request_refresh()
 
 
 class ContinuousFanEnabledSwitch(ActronAirNimbusEntity, SwitchEntity):
@@ -109,25 +155,58 @@ class ContinuousFanEnabledSwitch(ActronAirNimbusEntity, SwitchEntity):
             identifiers={(DOMAIN, ac_serial)},
         )
 
-    @property
-    def is_on(self) -> bool:
-        return (
-            self.coordinator.data[self.ac_serial]
-            ._state["UserAirconSettings"]["FanMode"]
-            .endswith("+CONT")
+        self._update_internal_state(initial_state)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        state = self.coordinator.data[self.ac_serial]
+
+        self._update_internal_state(state)
+
+        return super()._handle_coordinator_update()
+
+    def _update_internal_state(self, state):
+        self._attr_is_on = state._state["UserAirconSettings"]["FanMode"].endswith(
+            "+CONT"
         )
 
     async def async_turn_on(self, **kwargs) -> None:
+        fan_mode = (
+            self.coordinator.data[self.ac_serial]
+            ._state["UserAirconSettings"]["FanMode"]
+            .replace("+CONT", "")
+        )
         await self.coordinator.actron_api_client.set_settings(
-            serial=self._system_serial,
-            settings={"UserAirconSettings.FanMode": "Continuous"},
+            serial=self.ac_serial,
+            settings={"UserAirconSettings.FanMode": f"{fan_mode}+CONT"},
         )
 
+        # pre-emptively update local values given actron events can be slow
+        self._attr_is_on = True
+        # write the state back now we've pre-emptively updated it for responsiveness
+        self.async_write_ha_state()
+
+        # tell the coordinator to refresh data
+        await self.coordinator.async_request_refresh()
+
     async def async_turn_off(self, **kwargs) -> None:
-        await self.coordinator.actron_api_client.set_settings(
-            serial=self._system_serial,
-            settings={"UserAirconSettings.FanMode": "Auto"},
+        fan_mode = (
+            self.coordinator.data[self.ac_serial]
+            ._state["UserAirconSettings"]["FanMode"]
+            .replace("+CONT", "")
         )
+        await self.coordinator.actron_api_client.set_settings(
+            serial=self.ac_serial,
+            settings={"UserAirconSettings.FanMode": fan_mode},
+        )
+
+        # pre-emptively update local values given actron events can be slow
+        self._attr_is_on = False
+        # write the state back now we've pre-emptively updated it for responsiveness
+        self.async_write_ha_state()
+
+        # tell the coordinator to refresh data
+        await self.coordinator.async_request_refresh()
 
 
 class AwayModeEnabledSwitch(ActronAirNimbusEntity, SwitchEntity):
@@ -145,20 +224,43 @@ class AwayModeEnabledSwitch(ActronAirNimbusEntity, SwitchEntity):
             identifiers={(DOMAIN, ac_serial)},
         )
 
-    @property
-    def is_on(self) -> bool:
-        return self.coordinator.data[self.ac_serial]._state["UserAirconSettings"][
-            "AwayMode"
-        ]
+        self._update_internal_state(initial_state)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        state = self.coordinator.data[self.ac_serial]
+
+        self._update_internal_state(state)
+
+        return super()._handle_coordinator_update()
+
+    def _update_internal_state(self, state):
+        self._attr_is_on = state._state["UserAirconSettings"]["AwayMode"]
 
     async def async_turn_on(self, **kwargs) -> None:
         await self.coordinator.actron_api_client.set_settings(
-            serial=self._system_serial,
+            serial=self.ac_serial,
             settings={"UserAirconSettings.AwayMode": True},
         )
 
+        # pre-emptively update local values given actron events can be slow
+        self._attr_is_on = True
+        # write the state back now we've pre-emptively updated it for responsiveness
+        self.async_write_ha_state()
+
+        # tell the coordinator to refresh data
+        await self.coordinator.async_request_refresh()
+
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.actron_api_client.set_settings(
-            serial=self._system_serial,
+            serial=self.ac_serial,
             settings={"UserAirconSettings.AwayMode": False},
         )
+
+        # pre-emptively update local values given actron events can be slow
+        self._attr_is_on = False
+        # write the state back now we've pre-emptively updated it for responsiveness
+        self.async_write_ha_state()
+
+        # tell the coordinator to refresh data
+        await self.coordinator.async_request_refresh()
