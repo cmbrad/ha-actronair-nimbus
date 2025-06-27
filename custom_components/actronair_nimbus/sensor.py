@@ -62,6 +62,9 @@ async def async_setup_entry(
                     ActronAirNimbusZoneSensorBatterySensor(
                         coordinator, state, ac_serial, zone_id
                     ),
+                    ActronAirNimbusZoneSensorWifiSignalStrengthSensor(
+                        coordinator, state, ac_serial, zone_id
+                    )
                     ActronAirNimbusZoneDamperPositionSensor(
                         coordinator, state, ac_serial, zone_id
                     ),
@@ -131,7 +134,7 @@ class ActronAirNimbusCompressorSpeedSensor(ActronAirNimbusSensorEntity):
 
     _attr_translation_key = "compressor_speed"
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = REVOLUTIONS_PER_MINUTE
+    _attr_native_unit_of_measurement = PERCENTAGE
 
     def _update_internal_state(self, state):
         """Update the internal state from the coordinator data."""
@@ -274,6 +277,19 @@ class ActronAirNimbusZoneSensorBatterySensor(ActronAirNimbusZoneSensorEntity):
         self._attr_native_value = peripherals[self.zone_id][
             "RemainingBatteryCapacity_pc"
         ]
+
+
+class ActronAirNimbusZoneSensorWifiSignalStrengthSensor(ActronAirNimbusZoneSensorEntity):
+    """Representation of the zone sensor wifi signal strength sensor."""
+
+    _attr_translation_key = "zone_sensor_wifi_signal_strength"
+    _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS
+
+    def _update_internal_state(self, state):
+        """Update the internal state from the coordinator data."""
+        self._attr_native_value = state.zones[self.zone_id]["Sensors"][self.ac_serial.upper()]["Signal_of3"]
 
 
 class ActronAirNimbusZoneDamperPositionSensor(ActronAirNimbusZoneSensorEntity):

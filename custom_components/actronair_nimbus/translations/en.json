@@ -61,6 +61,9 @@
       "zone_sensor_battery": {
         "name": "Zone sensor battery"
       },
+      "zone_sensor_wifi_signal_strength": {
+        "name": "Zone sensor Wi-Fi signal strength"
+      },
       "zone_damper_position": {
         "name": "Zone damper position"
       }
