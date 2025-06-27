@@ -64,7 +64,7 @@ async def async_setup_entry(
                     ),
                     ActronAirNimbusZoneSensorWifiSignalStrengthSensor(
                         coordinator, state, ac_serial, zone_id
-                    )
+                    ),
                     ActronAirNimbusZoneDamperPositionSensor(
                         coordinator, state, ac_serial, zone_id
                     ),
