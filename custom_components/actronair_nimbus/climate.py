@@ -382,6 +382,7 @@ class ActronAirNimbusZone(ActronAirNimbusClimateEntity):
         defrost = state._state["LiveAircon"]["Defrost"]
         compressor_mode = state._state["LiveAircon"]["CompressorMode"]
         zone_enabled = state._state["UserAirconSettings"]["EnabledZones"][self.zone_id]
+        zone_damper_open = state.zones[self.zone_id]["ZonePosition"] != 0
 
         def _hvac_modes(mode: str) -> list[HVACMode]:
             return [
@@ -402,11 +403,19 @@ class ActronAirNimbusZone(ActronAirNimbusClimateEntity):
             is_on: bool,
             defrost: bool,
             zone_enabled: bool,
+            zone_damper_open: bool,
         ) -> HVACAction:
             """Convert Actron mode to Home Assistant HVAC action."""
             if not is_on or not zone_enabled:
                 return HVACAction.OFF
 
+            # if the system is on and the zone is enabled, but the damper is
+            # closed then we're idle
+            if not zone_damper_open:
+                return HVACAction.IDLE
+
+            # if we're operating but the system is in defrost then this zone
+            # is also in defrost
             if defrost:
                 return HVACAction.DEFROSTING
 
@@ -473,7 +482,8 @@ class ActronAirNimbusZone(ActronAirNimbusClimateEntity):
 
         self._attr_hvac_mode = _hvac_mode(mode, zone_enabled)
         self._attr_hvac_action = _hvac_action(
-            mode, compressor_mode, continuous_fan, is_on, defrost, zone_enabled
+            mode, compressor_mode, continuous_fan, is_on, defrost, zone_enabled,
+            zone_damper_open
         )
         self._attr_current_temperature = _current_temperature(state)
         self._attr_current_humidity = _current_humidity(state)

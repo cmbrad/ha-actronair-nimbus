@@ -301,4 +301,5 @@ class ActronAirNimbusZoneDamperPositionSensor(ActronAirNimbusZoneSensorEntity):
 
     def _update_internal_state(self, state):
         """Update the internal state from the coordinator data."""
-        self._attr_native_value = state.zones[self.zone_id]["ZonePosition"]
+        # this appears to be a value out of 20. Convert to a real
+        self._attr_native_value = 100 * state.zones[self.zone_id]["ZonePosition"] / 20
