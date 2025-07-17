@@ -292,8 +292,10 @@ class ActronAirNimbusAirConditioner(ActronAirNimbusClimateEntity):
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
         # for continuous mode we want to use whatever the current setting is
-        continuous = self.coordinator.data[self.ac_serial]._state["UserAirconSettings"]["FanMode"].endswith(
-            "+CONT"
+        continuous = (
+            self.coordinator.data[self.ac_serial]
+            ._state["UserAirconSettings"]["FanMode"]
+            .endswith("+CONT")
         )
         await self.coordinator.actron_api_client.set_fan_mode(
             serial=self.unique_id,
@@ -486,8 +488,13 @@ class ActronAirNimbusZone(ActronAirNimbusClimateEntity):
 
         self._attr_hvac_mode = _hvac_mode(mode, zone_enabled)
         self._attr_hvac_action = _hvac_action(
-            mode, compressor_mode, continuous_fan, is_on, defrost, zone_enabled,
-            zone_damper_open
+            mode,
+            compressor_mode,
+            continuous_fan,
+            is_on,
+            defrost,
+            zone_enabled,
+            zone_damper_open,
         )
         self._attr_current_temperature = _current_temperature(state)
         self._attr_current_humidity = _current_humidity(state)

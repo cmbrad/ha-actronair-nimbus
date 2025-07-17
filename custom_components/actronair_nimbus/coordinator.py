@@ -20,6 +20,9 @@ REQUEST_REFRESH_DELAY = (
     10.0  # seconds to wait before allowing another request to refresh data
 )
 
+DATA_MODE_EVENT = "event"
+DATA_MODE_STATUS = "status"
+
 
 class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching data from the ActronAir Nimbus device."""
@@ -47,6 +50,8 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.systems = None
 
+        self.data_mode = DATA_MODE_STATUS
+
     async def _async_setup(self):
         _LOGGER.debug("Fetching systems")
         self.systems = await self.actron_api_client.get_ac_systems()
@@ -54,7 +59,7 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict:
         """Fetch updates and merge incremental changes into the full state."""
 
-        _LOGGER.debug("Performing data update")
+        _LOGGER.debug(f"Performing data update using mode {self.data_mode}")
 
         # take a copy - update all or nothing
         data = copy.deepcopy(self.data) if self.data is not None else {}
@@ -67,33 +72,15 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
                 if serial_number not in data:
                     data[serial_number] = ActronAdvanceState()
 
-                # if the state is empty then get all events, otherwise just get latest
-                # that we have not seen yet
-                if data[serial_number]._event_id is None:
-                    _LOGGER.debug('Getting latest events for "%s"', serial_number)
-                    events = await self.actron_api_client.get_ac_events(
-                        serial=serial_number, event_type="latest"
+                if self.data_mode == DATA_MODE_STATUS:
+                    await self._async_update_status(
+                        serial_number=serial_number, data=data
                     )
-                else:
-                    _LOGGER.debug(
-                        'Getting newer events for "%s" since event id %s',
-                        serial_number,
-                        data[serial_number]._event_id,
-                    )
-                    events = await self.actron_api_client.get_ac_events(
-                        serial=serial_number,
-                        event_type="newer",
-                        event_id=data[serial_number]._event_id,
-                    )
-                    _LOGGER.debug(
-                        'Found %d newer events for "%s"',
-                        len(events["events"]),
-                        serial_number,
+                if self.data_mode == DATA_MODE_EVENT:
+                    await self._async_update_event(
+                        serial_number=serial_number, data=data
                     )
 
-                # ensure sorted so that we apply oldest to newest or result will be wrong
-                for event in sorted(events["events"], key=lambda x: x["timestamp"]):
-                    data[serial_number].update_from_event(event)
         except Exception as e:
             _LOGGER.exception("Failed to update data")
             raise UpdateFailed("Failed to update data") from e
@@ -101,3 +88,37 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Data update complete")
 
         return data
+
+    async def _async_update_status(self, serial_number: str, data: dict) -> dict:
+        data[serial_number].update_from_status(
+            status=await self.actron_api_client.get_ac_status(serial=serial_number)
+        )
+
+    async def _async_update_event(self, serial_number: str, data: dict) -> dict:
+        # if the state is empty then get all events, otherwise just get latest
+        # that we have not seen yet
+        if data[serial_number]._event_id is None:
+            _LOGGER.debug('Getting latest events for "%s"', serial_number)
+            events = await self.actron_api_client.get_ac_events(
+                serial=serial_number, event_type="latest"
+            )
+        else:
+            _LOGGER.debug(
+                'Getting newer events for "%s" since event id %s',
+                serial_number,
+                data[serial_number]._event_id,
+            )
+            events = await self.actron_api_client.get_ac_events(
+                serial=serial_number,
+                event_type="newer",
+                event_id=data[serial_number]._event_id,
+            )
+            _LOGGER.debug(
+                'Found %d newer events for "%s"',
+                len(events["events"]),
+                serial_number,
+            )
+
+        # ensure sorted so that we apply oldest to newest or result will be wrong
+        for event in sorted(events["events"], key=lambda x: x["timestamp"]):
+            data[serial_number].update_from_event(event)
