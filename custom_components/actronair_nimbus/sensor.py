@@ -44,10 +44,10 @@ async def async_setup_entry(
                 ActronAirNimbusCompressorCoilTemperatureSensor(
                     coordinator, state, ac_serial
                 ),
-                ActronAirNimbusCompressorCoilInletTemperatureSensor(
+                ActronAirNimbusCompressorDischargeTemperatureSensor(
                     coordinator, state, ac_serial
                 ),
-                ActronAirNimbusCompressorDischargeTemperatureSensor(
+                ActronAirNimbusCompressorCoilInletTemperatureSensor(
                     coordinator, state, ac_serial
                 ),
                 ActronAirNimbusVftAirflowSensor(coordinator, state, ac_serial),
@@ -205,6 +205,18 @@ class ActronAirNimbusCompressorCoilTemperatureSensor(ActronAirNimbusSensorEntity
         self._attr_native_value = state._state["LiveAircon"]["OutdoorUnit"]["CoilTemp"]
 
 
+class ActronAirNimbusCompressorDischargeTemperatureSensor(ActronAirNimbusSensorEntity):
+    """Representation of the compressor discharge temperature sensor."""
+
+    _attr_translation_key = "compressor_discharge_temperature"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def _update_internal_state(self, state):
+        """Update the internal state from the coordinator data."""
+        self._attr_native_value = state._state["LiveAircon"]["OutdoorUnit"]["DischargeTemp"]
+
+
 class ActronAirNimbusCompressorCoilInletTemperatureSensor(ActronAirNimbusSensorEntity):
     """Representation of the compressor coil inlet temperature sensor."""
 
@@ -215,18 +227,6 @@ class ActronAirNimbusCompressorCoilInletTemperatureSensor(ActronAirNimbusSensorE
     def _update_internal_state(self, state):
         """Update the internal state from the coordinator data."""
         self._attr_native_value = state._state["LiveAircon"]["CoilInlet"]
-
-
-class ActronAirNimbusCompressorCoilInletTemperatureSensor(ActronAirNimbusSensorEntity):
-    """Representation of the compressor coil inlet temperature sensor."""
-
-    _attr_translation_key = "compressor_coil_inlet_temperature"
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
-
-    def _update_internal_state(self, state):
-        """Update the internal state from the coordinator data."""
-        self._attr_native_value = state._state["LiveAircon"]["DischargeTemp"]
 
 
 class ActronAirNimbusVftAirflowSensor(ActronAirNimbusSensorEntity):
