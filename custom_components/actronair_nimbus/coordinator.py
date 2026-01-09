@@ -134,7 +134,7 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
             create_notification(self.hass, f"{error['Description']} (Severity: {error['Severity']}, Code: {error['Code']}, Time: {error['Time']})", title="ActronAir Nimbus Alert")
 
         # save servicing data so we know what errors we have seen so far
-        self.servicing = data.deepcopy(data.get('Servicing', {}))
+        self.servicing = copy.deepcopy(data.get('Servicing', {}))
 
         return data
 
