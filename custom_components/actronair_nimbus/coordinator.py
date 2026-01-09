@@ -121,9 +121,9 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
 
         for error in data[serial_number].servicing.get('NV_ErrorHistory', []):
             # if we haven't seen any errors before, stop! We don't want to flood on past errors
-            # if self.servicing is None:
-            #     _LOGGER.debug('No prior servicing data, skipping alert raising to avoid flood')
-            #     break
+            if self.servicing is None:
+                _LOGGER.debug('No prior servicing data, skipping alert raising to avoid flood')
+                break
             # if we have seen an error before - stop! The API returns the latest error first, so we can skip the rest
             if self.servicing is not None and error in self.servicing.get('NV_ErrorHistory', []):
                 _LOGGER.debug(f'Seen error ({error}) before, stopping alert raising to avoid duplicates')
