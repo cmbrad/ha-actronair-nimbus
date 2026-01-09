@@ -63,6 +63,10 @@ class ActronAdvanceState:
     def peripherals(self) -> List[dict]:
         return self._state["AirconSystem"]["Peripherals"]
 
+    @property
+    def servicing(self) -> dict:
+        return self._state["Servicing"]
+
     def update_from_status(self, status: dict):
         # keys ['isOnline', 'timeSinceLastContact', 'lastStatusUpdate', 'lastKnownState']
 
