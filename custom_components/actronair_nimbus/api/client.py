@@ -152,9 +152,9 @@ class ActronAirAPIClient:
                 settings['UserAirconSettings.TemperatureSetpoint_Heat_oC'] = heat
         else:
             if cool is not None:
-                settings[f'RemoteZoneInfo[{zone_number - 1}].TemperatureSetpoint_Cool_oC'] = cool
+                settings[f'RemoteZoneInfo[{zone_number}].TemperatureSetpoint_Cool_oC'] = cool
             if heat is not None:
-                settings[f'RemoteZoneInfo[{zone_number - 1}].TemperatureSetpoint_Heat_oC'] = heat
+                settings[f'RemoteZoneInfo[{zone_number}].TemperatureSetpoint_Heat_oC'] = heat
 
         return await self.set_settings(serial=serial, settings=settings)
 

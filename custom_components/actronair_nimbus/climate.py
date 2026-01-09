@@ -578,7 +578,7 @@ class ActronAirNimbusZone(ActronAirNimbusClimateEntity):
             serial=self.ac_serial,
             cool=temperature,
             heat=temperature,
-            zone_number=self.zone_id,
+            zone_number=self.zone_id + 1,  # zone_number is 1-based index
         )
 
         # pre-emptively update local values given actron events can be slow
