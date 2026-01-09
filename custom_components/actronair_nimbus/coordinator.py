@@ -88,9 +88,7 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.exception("Failed to update data")
             raise UpdateFailed("Failed to update data") from e
 
-        _LOGGER.debug("Data update complete")
-
-        _LOGGER.debug(f'Determining if need to raise alerts (have {len(data.get("Servicing", {}).get("NV_ErrorHistory", []))} prior errors)')
+        _LOGGER.debug(f'Determining if need to raise alerts (have {len(data[serial_number].get("Servicing", {}).get("NV_ErrorHistory", []))} prior errors)')
 
         # "Servicing": {
         #         "NV_ErrorHistory": [
@@ -121,7 +119,7 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
         #         ]
         # }
 
-        for error in data.get('Servicing', {}).get('NV_ErrorHistory', []):
+        for error in data[serial_number].get('Servicing', {}).get('NV_ErrorHistory', []):
             # if we haven't seen any errors before, stop! We don't want to flood on past errors
             # if self.servicing is None:
             #     _LOGGER.debug('No prior servicing data, skipping alert raising to avoid flood')
@@ -139,8 +137,9 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
 
 
         # save servicing data so we know what errors we have seen so far
-        self.servicing = copy.deepcopy(data.get('Servicing', {}))
-        _LOGGER.debug('Alert raising complete, saved servicing data')
+        self.servicing = copy.deepcopy(data[serial_number].get('Servicing', {}))
+
+        _LOGGER.debug('Data update complete')
 
         return data
 
