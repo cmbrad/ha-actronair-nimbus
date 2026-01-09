@@ -131,10 +131,13 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
             if error['Severity'] == 'No Error':
                 continue
 
+            _LOGGER.debug(f'Raising alert for ActronAir Nimbus error: {error}')
             create_notification(self.hass, f"{error['Description']} (Severity: {error['Severity']}, Code: {error['Code']}, Time: {error['Time']})", title="ActronAir Nimbus Alert")
+
 
         # save servicing data so we know what errors we have seen so far
         self.servicing = copy.deepcopy(data.get('Servicing', {}))
+        _LOGGER.debug('Alert raising complete, saved servicing data')
 
         return data
 
