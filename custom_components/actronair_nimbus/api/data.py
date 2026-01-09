@@ -2,7 +2,8 @@ import re
 import copy
 import logging
 
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from dataclasses import dataclass, field
 from typing import List
 
@@ -70,11 +71,8 @@ class ActronAdvanceState:
     def update_from_status(self, status: dict):
         # keys ['isOnline', 'timeSinceLastContact', 'lastStatusUpdate', 'lastKnownState']
 
-        from datetime import datetime, timezone
-        import pytz
-
         # event['timestamp'] example 2025-03-07T16:35:07.3687629+00:00
-        aedt_zone = pytz.timezone("Australia/Sydney")
+        aedt_zone = ZoneInfo("Australia/Sydney")
         # remove all microseconds as the server can seemingly sometimes send timestamps
         # with varying levels of precision and given we don't really care about
         # that it's easier to just strip it off
@@ -93,13 +91,10 @@ class ActronAdvanceState:
         if event["type"] != "full-status-broadcast" and len(self._state) == 0:
             return
 
-        from datetime import datetime, timezone
-        import pytz
-
         changes = []
 
         # event['timestamp'] example 2025-03-07T16:35:07.3687629+00:00
-        aedt_zone = pytz.timezone("Australia/Sydney")
+        aedt_zone = ZoneInfo("Australia/Sydney")
         # remove all microseconds as the server can seemingly sometimes send timestamps
         # with varying levels of precision and given we don't really care about
         # that it's easier to just strip it off
@@ -160,11 +155,8 @@ class ActronAdvanceState:
 
     @staticmethod
     def event_timestamp(event):
-        from datetime import datetime, timezone
-        import pytz
-
         # event['timestamp'] example 2025-03-07T16:35:07.3687629+00:00
-        aedt_zone = pytz.timezone("Australia/Sydney")
+        aedt_zone = ZoneInfo("Australia/Sydney")
         # remove all microseconds as the server can seemingly sometimes send timestamps
         # with varying levels of precision and given we don't really care about
         # that it's easier to just strip it off
@@ -177,8 +169,6 @@ class ActronAdvanceState:
 
     @staticmethod
     def event_time_ago(event):
-        from datetime import datetime, timezone, timedelta
-
         # strip the microseconds from the timestamp to make parsing easier
         event_time = datetime.fromisoformat(event["timestamp"][:19]).replace(
             tzinfo=timezone.utc
