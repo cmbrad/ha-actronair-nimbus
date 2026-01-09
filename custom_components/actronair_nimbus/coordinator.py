@@ -90,7 +90,7 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
 
         _LOGGER.debug("Data update complete")
 
-        _LOGGER.debug('Determining if need to raise alerts')
+        _LOGGER.debug(f'Determining if need to raise alerts (have {len(data.get("Servicing", {}).get("NV_ErrorHistory", []))} prior errors)')
 
         # "Servicing": {
         #         "NV_ErrorHistory": [
@@ -127,7 +127,7 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
             #     _LOGGER.debug('No prior servicing data, skipping alert raising to avoid flood')
             #     break
             # if we have seen an error before - stop! The API returns the latest error first, so we can skip the rest
-            if error in self.servicing.get('NV_ErrorHistory', []):
+            if self.servicing is not None and error in self.servicing.get('NV_ErrorHistory', []):
                 _LOGGER.debug(f'Seen error ({error}) before, stopping alert raising to avoid duplicates')
                 break
             # if an error is not an error, skip it
