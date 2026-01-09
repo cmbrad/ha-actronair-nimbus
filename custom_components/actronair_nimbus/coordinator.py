@@ -52,6 +52,8 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.data_mode = DATA_MODE_STATUS
 
+        self.servicing = None
+
     async def _async_setup(self):
         _LOGGER.debug("Fetching systems")
         self.systems = await self.actron_api_client.get_ac_systems()
@@ -86,6 +88,53 @@ class ActronAirNimbusDataUpdateCoordinator(DataUpdateCoordinator):
             raise UpdateFailed("Failed to update data") from e
 
         _LOGGER.debug("Data update complete")
+
+        _LOGGER.debug('Determining if need to raise alerts')
+
+        # "Servicing": {
+        #         "NV_ErrorHistory": [
+        #             {
+        #                 "Code": "E00",
+        #                 "Description": "No Error",
+        #                 "Severity": "No Error",
+        #                 "Time": "2026-01-09T17:17:51"
+        #             },
+        #             {
+        #                 "Code": "E06",
+        #                 "Description": "High Discharge Temp. (Discharge Temp exceeded 138C)",
+        #                 "Severity": "Error",
+        #                 "Time": "2026-01-09T17:17:01"
+        #             },
+        #             {
+        #                 "Code": "E00",
+        #                 "Description": "No Error",
+        #                 "Severity": "No Error",
+        #                 "Time": "2026-01-09T16:45:16"
+        #             },
+        #             {
+        #                 "Code": "E06",
+        #                 "Description": "High Discharge Temp. (Discharge Temp exceeded 138C)",
+        #                 "Severity": "Error",
+        #                 "Time": "2026-01-09T16:44:43"
+        #             }
+        #         ]
+        # }
+
+        for error in data.get('Servicing', {}).get('NV_ErrorHistory', []):
+            # if we haven't seen any errors before, stop! We don't want to flood on past errors
+            # if self.servicing is None:
+            #     break
+            # if we have seen an error before - stop! The API returns the latest error first, so we can skip the rest
+            if error in self.servicing.get('NV_ErrorHistory', []):
+                break
+            # if an error is not an error, skip it
+            if error['Severity'] == 'No Error':
+                continue
+
+            create_notification(self.hass, f"{error['Description']} (Severity: {error['Severity']}, Code: {error['Code']}, Time: {error['Time']})", title="ActronAir Nimbus Alert")
+
+        # save servicing data so we know what errors we have seen so far
+        self.servicing = data.deepcopy(data.get('Servicing', {}))
 
         return data
 
