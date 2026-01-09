@@ -46,6 +46,9 @@
       "compressor_coil_temperature": {
         "name": "Compressor coil temperature"
       },
+      "compressor_discharge_temperature": {
+        "name": "Compressor discharge temperature"
+      },
       "compressor_coil_inlet_temperature": {
         "name": "Compressor coil inlet temperature"
       },
