@@ -41,6 +41,9 @@ async def async_setup_entry(
                 ActronAirNimbusCompressorPowerSensor(coordinator, state, ac_serial),
                 ActronAirNimbusIndoorFanPwmSensor(coordinator, state, ac_serial),
                 ActronAirNimbusIndoorFanRpmSensor(coordinator, state, ac_serial),
+                ActronAirNimbusOutdoorAmbientTemperatureSensor(
+                    coordinator, state, ac_serial
+                ),
                 ActronAirNimbusCompressorCoilTemperatureSensor(
                     coordinator, state, ac_serial
                 ),
@@ -191,6 +194,18 @@ class ActronAirNimbusIndoorFanRpmSensor(ActronAirNimbusSensorEntity):
     def _update_internal_state(self, state):
         """Update the internal state from the coordinator data."""
         self._attr_native_value = state._state["LiveAircon"]["FanRPM"]
+
+
+class ActronAirNimbusOutdoorAmbientTemperatureSensor(ActronAirNimbusSensorEntity):
+    """Representation of the outdoor ambient temperature sensor."""
+
+    _attr_translation_key = "outdoor_ambient_temperature"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def _update_internal_state(self, state):
+        """Update the internal state from the coordinator data."""
+        self._attr_native_value = state._state["LiveAircon"]["OutdoorUnit"]["AmbTemp"]
 
 
 class ActronAirNimbusCompressorCoilTemperatureSensor(ActronAirNimbusSensorEntity):

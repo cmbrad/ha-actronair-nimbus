@@ -43,6 +43,9 @@
       "indoor_fan_rpm": {
         "name": "Indoor fan RPM"
       },
+      "outdoor_ambient_temperature": {
+        "name": "Outdoor ambient temperature"
+      },
       "compressor_coil_temperature": {
         "name": "Compressor coil temperature"
       },
